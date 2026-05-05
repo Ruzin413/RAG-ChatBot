@@ -18,5 +18,4 @@ tiktoken>=0.12.0
 langchain-text-splitters>=1.1.2
 indic-transliteration>=2.3.62
 langdetect>=1.0.9
-
 rapidfuzz

@@ -183,6 +183,18 @@ def _extract_vocab_tokens_from_text(text: str) -> List[str]:
         return []
     return re.findall(r"[a-z][a-z0-9_-]{2,}", text.lower())
 
+def _chat_history_item_matches_active_kb(item: dict, active_kb_name: str) -> bool:
+    """Use chat_history for typo/fuzzy only when verified and kb_name matches the active KB."""
+    if item.get("verified") is not True:
+        return False
+    kb = (active_kb_name or "").strip()
+    if not kb:
+        return False
+    item_kb = (item.get("kb_name") or "").strip()
+    if not item_kb:
+        return False
+    return item_kb.casefold() == kb.casefold()
+
 def refresh_typo_sources(target_kb: Optional[Dict[str, str]]) -> None:
     """Refresh active KB and chat history before typo/fuzzy operations."""
     try:
@@ -215,8 +227,7 @@ def get_typo_vocabulary(active_kb_name: str) -> List[str]:
                 tokens.add(token)
 
     for item in vector_store.chat_history_verified_meta:
-        item_kb = (item.get("kb_name") or "").strip()
-        if active_kb_name and item_kb and item_kb != active_kb_name:
+        if not _chat_history_item_matches_active_kb(item, active_kb_name):
             continue
         text = item.get("text") or f"{item.get('question', '')} {item.get('answer', '')}"
         for token in _extract_vocab_tokens_from_text(text):
@@ -334,8 +345,7 @@ def fuzzy_lexical_context(query: str, active_kb_name: str, top_n: int = 3) -> st
             candidates.append((score, text))
 
     for item in vector_store.chat_history_verified_meta:
-        item_kb = (item.get("kb_name") or "").strip()
-        if active_kb_name and item_kb and item_kb != active_kb_name:
+        if not _chat_history_item_matches_active_kb(item, active_kb_name):
             continue
         text = (item.get("text") or f"Question: {item.get('question', '')}\nAnswer: {item.get('answer', '')}").strip()
         if not text:
@@ -807,7 +817,6 @@ async def delete_knowledge_base(name: str):
             os.remove(json_file)
         if bin_file and os.path.exists(bin_file):
             os.remove(bin_file)
-            
         # Remove from config
         del kb_config[name]
         save_kb_config(kb_config)
