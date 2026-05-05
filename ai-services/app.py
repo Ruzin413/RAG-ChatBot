@@ -107,7 +107,6 @@ _typo_vocab_cache = {
     "timestamp": 0.0,
     "tokens": [],
 }
-
 async def verify_token(
     x_api_key: Optional[str] = Header(None), 
     admin_token: Optional[str] = Cookie(None)
@@ -116,15 +115,12 @@ async def verify_token(
     if x_api_key == ADMIN_TOKEN or admin_token == ADMIN_TOKEN:
         return True
     raise HTTPException(status_code=401, detail="Unauthorized: Invalid or missing API Token")
-
 class MemoryAddRequest(BaseModel):
     question: str
     answer: str
     kb_name: str
-
 class LoginRequest(BaseModel):
     token: str
-
 def load_kb_config():
     if os.path.exists(KB_CONFIG_FILE):
         try:
@@ -134,37 +130,30 @@ def load_kb_config():
         except Exception as e:
             logger.error(f"Error loading KB config: {e}. Resetting to empty.")
     return {}
-
 def save_kb_config(config):
     with open(KB_CONFIG_FILE, 'w') as f:
         json.dump(config, f, indent=2)
-
 # Initialize Processors and Vector Store
 doc_processor = DocumentProcessor()
 vector_store = VectorStore()
 ai_pipeline = HybridPipeline(vector_store=vector_store)
 translation_service = TranslationService()
-
 # Pydantic Models for Request Bodies
 class ChatRequest(BaseModel):
     message: str
     kb_name: Optional[str] = None
     token: Optional[str] = None
-
 class UpdateUnverifiedRequest(BaseModel):
     chunk_id: str
     text: str
     kb_name: Optional[str] = None
-
 class DeleteUnverifiedRequest(BaseModel):
     chunk_id: str
     kb_name: Optional[str] = None
-
 class AddKBRequest(BaseModel):
     name: str
     jsonfile: str
     binfile: str
-
 # Helper Functions
 def normalize_user_query(text: str) -> str:
     """Normalize user text before translation/retrieval."""
@@ -177,12 +166,10 @@ def normalize_user_query(text: str) -> str:
         cleaned = token.strip()
         words.append(COMMON_ABBREVIATIONS.get(cleaned, cleaned))
     return " ".join(words).strip()
-
 def _extract_vocab_tokens_from_text(text: str) -> List[str]:
     if not text:
         return []
     return re.findall(r"[a-z][a-z0-9_-]{2,}", text.lower())
-
 def _chat_history_item_matches_active_kb(item: dict, active_kb_name: str) -> bool:
     """Use chat_history for typo/fuzzy only when verified and kb_name matches the active KB."""
     if item.get("verified") is not True:
@@ -194,7 +181,6 @@ def _chat_history_item_matches_active_kb(item: dict, active_kb_name: str) -> boo
     if not item_kb:
         return False
     return item_kb.casefold() == kb.casefold()
-
 def refresh_typo_sources(target_kb: Optional[Dict[str, str]]) -> None:
     """Refresh active KB and chat history before typo/fuzzy operations."""
     try:
@@ -207,7 +193,6 @@ def refresh_typo_sources(target_kb: Optional[Dict[str, str]]) -> None:
         vector_store._load_chat_history()
     except Exception as e:
         logger.warning(f"Failed to refresh typo sources: {e}")
-
 def get_typo_vocabulary(active_kb_name: str) -> List[str]:
     """Build and cache typo vocabulary from current KB metadata and verified history."""
     now = time.time()
@@ -218,14 +203,12 @@ def get_typo_vocabulary(active_kb_name: str) -> List[str]:
     )
     if cache_is_fresh:
         return _typo_vocab_cache["tokens"]
-
     tokens = set()
     for item in vector_store.metadata:
         text = item.get("text") or ""
         for token in _extract_vocab_tokens_from_text(text):
             if len(token) >= TYPO_VOCAB_MIN_TOKEN_LEN and token not in PROTECTED_TERMS:
                 tokens.add(token)
-
     for item in vector_store.chat_history_verified_meta:
         if not _chat_history_item_matches_active_kb(item, active_kb_name):
             continue
@@ -233,14 +216,12 @@ def get_typo_vocabulary(active_kb_name: str) -> List[str]:
         for token in _extract_vocab_tokens_from_text(text):
             if len(token) >= TYPO_VOCAB_MIN_TOKEN_LEN and token not in PROTECTED_TERMS:
                 tokens.add(token)
-
     tokens.update(COMMON_ABBREVIATIONS.values())
     token_list = sorted(tokens)
     _typo_vocab_cache["kb_name"] = active_kb_name
     _typo_vocab_cache["timestamp"] = now
     _typo_vocab_cache["tokens"] = token_list
     return token_list
-
 def build_typo_strategy(query: str, active_kb_name: str) -> Dict[str, object]:
     """
     Decide typo policy:
@@ -575,7 +556,6 @@ async def chat(request_data: ChatRequest, x_api_key: Optional[str] = Header(None
                 "changed": False,
                 "suggestion": "",
             }
-
             if user_lang == "en":
                 typo_strategy = build_typo_strategy(english_query, active_kb_name)
                 logger.info(
@@ -727,7 +707,6 @@ async def update_unverified(data: UpdateUnverifiedRequest):
                 if vector_store.index_path != target['binfile']:
                     logger.info(f"Switching KB to '{kb_name}' for update")
                     vector_store.load_kb(target['binfile'], target['jsonfile'])
-        
         success = vector_store.update_chunk(chunk_id, new_text)
         if success:
             return {

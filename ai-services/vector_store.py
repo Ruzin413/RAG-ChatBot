@@ -22,10 +22,8 @@ class VectorStore:
         except Exception as e:
             logger.error(f"Failed to load embedding model: {e}")
             raise
-
         self.index = None
         self.metadata = []
-        
         # Centralized Data Directory
         self.data_dir = os.path.join(os.path.dirname(__file__), "data")
         os.makedirs(self.data_dir, exist_ok=True)
@@ -36,10 +34,8 @@ class VectorStore:
         self.chat_history = []
         self.history_index = None
         self.chat_history_verified_meta = [] # Subset of chat_history that is verified
-        
         self._load_chat_history()
         self.load_kb(self.index_path, self.meta_path)
-
     def _load_chat_history(self):
         """Load centralized chat history and its vector index from disk."""
         if os.path.exists(self.chat_history_path):

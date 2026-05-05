@@ -20,13 +20,10 @@ def is_navigation_intent(text: str) -> bool:
     Only triggers when a NAVIGATE_KEYWORD (navigate, redirect) is present."""
     text_lower = text.lower().strip()
     words = set(re.sub(r'[?!.,]', '', text_lower).split())
-    
     # Navigation intent REQUIRES a navigate/redirect keyword
     if not (words & NAVIGATE_KEYWORDS):
         return False
-    
     return True
-
 def get_navigation_destination(text: str) -> str:
     """Determine the destination page based on NAV_MAP."""
     text_lower = text.lower()
@@ -34,13 +31,10 @@ def get_navigation_destination(text: str) -> str:
     for dest, config in NAV_MAP.items():
         if any(k in text_lower for k in config["keywords"]):
             return dest
-            
     return None
-
 def build_navigation_reply(dest: str) -> str:
     """Generate a polite reply for navigation."""
     return f"Sure! Redirecting you to the {dest} page now."
-
 def get_redirect_path(dest: str) -> str:
     """Map internal destination names to URL paths via NAV_MAP."""
     if dest in NAV_MAP:
