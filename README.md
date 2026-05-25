@@ -137,7 +137,7 @@ The system features interactive API documentation. Once the backend is running, 
 
 ---
 
-Developed with ❤️ by Rujin Manandhar.
+Developed by Rujin Manandhar.
 
 ---
 
